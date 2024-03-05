@@ -1,0 +1,19 @@
+{
+  "name": "gover-protocol-contracts",
+  "version": "1.0.0",
+  "description": "The contract set of gover protocol",
+  "scripts": {
+    "test": "hardhat test",
+    "build": "hardhat compile",
+    "coverage": "hardhat coverage --solcoverjs ./.solcover.js",
+    "docgen": "hardhat docgen"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^2.0.2",
+    "hardhat": "^2.21.0"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^4.8.1",
+    "@openzeppelin/contracts-upgradeable": "4.8.1"
+  }
+}
