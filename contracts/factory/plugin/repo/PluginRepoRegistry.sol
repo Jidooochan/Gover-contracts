@@ -4,7 +4,6 @@ pragma solidity 0.8.17;
 
 import {IDAO} from "../../../core/dao/IDAO.sol";
 import {InterfaceBasedRegistry} from "../../utils/InterfaceBasedRegistry.sol";
-import {isSubdomainValid} from "../../utils/RegistryUtils.sol";
 import {IPluginRepo} from "./IPluginRepo.sol";
 
 /// @title PluginRepoRegistry
@@ -15,15 +14,8 @@ contract PluginRepoRegistry is InterfaceBasedRegistry {
         keccak256("REGISTER_PLUGIN_REPO_PERMISSION");
 
     /// @notice Emitted if a new plugin repository is registered.
-    /// @param subdomain The subdomain of the plugin repository.
     /// @param pluginRepo The address of the plugin repository.
-    event PluginRepoRegistered(string subdomain, address pluginRepo);
-
-    /// @notice Thrown if the plugin subdomain doesn't match the regex `[0-9a-z\-]`
-    error InvalidPluginSubdomain(string subdomain);
-
-    /// @notice Thrown if the plugin repository subdomain is empty.
-    error EmptyPluginRepoSubdomain();
+    event PluginRepoRegistered(address pluginRepo);
 
     /// @dev Used to disallow initializing the implementation contract by an attacker for extra safety.
     constructor() {
@@ -37,24 +29,15 @@ contract PluginRepoRegistry is InterfaceBasedRegistry {
         __InterfaceBasedRegistry_init(_dao, pluginRepoInterfaceId);
     }
 
-    /// @notice Registers a plugin repository with a subdomain and address.
-    /// @param subdomain The subdomain of the PluginRepo.
+    /// @notice Registers a plugin repository with its address.
     /// @param pluginRepo The address of the PluginRepo contract.
     function registerPluginRepo(
-        string calldata subdomain,
         address pluginRepo
     ) external auth(REGISTER_PLUGIN_REPO_PERMISSION_ID) {
-        if (!(bytes(subdomain).length > 0)) {
-            revert EmptyPluginRepoSubdomain();
-        }
-
-        if (!isSubdomainValid(subdomain)) {
-            revert InvalidPluginSubdomain({subdomain: subdomain});
-        }
 
         _register(pluginRepo);
 
-        emit PluginRepoRegistered(subdomain, pluginRepo);
+        emit PluginRepoRegistered(pluginRepo);
     }
 
     /// @notice This empty reserved space is put in place to allow future versions to add new variables without shifting down storage in the inheritance chain (see [OpenZepplins guide about storage gaps](https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps)).

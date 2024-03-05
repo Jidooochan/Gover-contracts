@@ -8,7 +8,6 @@ import {createERC1967Proxy} from "../../utils/Proxy.sol";
 import {PluginSetupProcessor} from "../plugin/setup/PluginSetupProcessor.sol";
 import {hashHelpers, PluginSetupRef} from "../plugin/setup/PluginSetupProcessorHelpers.sol";
 import {IPluginSetup} from "../plugin/setup/IPluginSetup.sol";
-import {DAORegistry} from "./DAORegistry.sol";
 
 /// @title DAOFactory
 /// @notice This contract is used to create a DAO.
@@ -16,21 +15,16 @@ contract DAOFactory {
     /// @notice The DAO base contract, to be used for creating new `DAO`s via `createERC1967Proxy` function.
     address public immutable daoBase;
 
-    /// @notice The DAO registry listing the `DAO` contracts created via this contract.
-    DAORegistry public immutable daoRegistry;
-
     /// @notice The plugin setup processor for installing plugins on the newly created `DAO`s.
     PluginSetupProcessor public immutable pluginSetupProcessor;
 
     /// @notice The container for the DAO settings to be set during the DAO initialization.
     /// @param trustedForwarder The address of the trusted forwarder required for meta transactions.
     /// @param daoURI The DAO uri used with [EIP-4824](https://eips.ethereum.org/EIPS/eip-4824).
-    /// @param subdomain The ENS subdomain to be registered for the DAO contract.
     /// @param metadata The metadata of the DAO.
     struct DAOSettings {
         address trustedForwarder;
         string daoURI;
-        string subdomain;
         bytes metadata;
     }
 
@@ -45,11 +39,9 @@ contract DAOFactory {
     /// @notice Thrown if `PluginSettings` array is empty, and no plugin is provided.
     error NoPluginProvided();
 
-    /// @notice The constructor setting the registry and plugin setup processor and creating the base contracts for the factory.
-    /// @param _registry The DAO registry to register the DAO by its name.
+    /// @notice The constructor setting the plugin setup processor and creating the base contracts for the factory.
     /// @param _pluginSetupProcessor The address of PluginSetupProcessor.
-    constructor(DAORegistry _registry, PluginSetupProcessor _pluginSetupProcessor) {
-        daoRegistry = _registry;
+    constructor(PluginSetupProcessor _pluginSetupProcessor) {
         pluginSetupProcessor = _pluginSetupProcessor;
 
         daoBase = address(new DAO());
@@ -69,9 +61,6 @@ contract DAOFactory {
 
         // Create DAO.
         createdDao = _createDAO(_daoSettings);
-
-        // Register DAO.
-        daoRegistry.register(createdDao, msg.sender, _daoSettings.subdomain);
 
         // Get Permission IDs
         bytes32 rootPermissionID = createdDao.ROOT_PERMISSION_ID();
