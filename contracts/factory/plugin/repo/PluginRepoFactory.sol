@@ -4,17 +4,22 @@ pragma solidity 0.8.17;
 
 import {PermissionLib} from "../../../core/permission/PermissionLib.sol";
 import {createERC1967Proxy} from "../../../utils/Proxy.sol";
+import {PluginRepoRegistry} from "./PluginRepoRegistry.sol";
 import {PluginRepo} from "./PluginRepo.sol";
 
 /// @title PluginRepoFactory
 /// @notice This contract creates `PluginRepo` proxies and registers them on an `PluginRepoRegistry` contract.
 contract PluginRepoFactory {
+    /// @notice The plugin registry contract.
+    PluginRepoRegistry public pluginRepoRegistry;
 
     /// @notice The address of the `PluginRepo` base contract.
     address public pluginRepoBase;
 
     /// @notice Initializes the addresses of the `PluginRepo` base contract to proxy to.
-    constructor() {
+    /// @param _pluginRepoRegistry The plugin registry address.
+    constructor(PluginRepoRegistry _pluginRepoRegistry) {
+        pluginRepoRegistry = _pluginRepoRegistry;
         pluginRepoBase = address(new PluginRepo());
     }
 
@@ -108,5 +113,7 @@ contract PluginRepoFactory {
                 abi.encodeWithSelector(PluginRepo.initialize.selector, _initialOwner)
             )
         );
+
+        pluginRepoRegistry.registerPluginRepo(address(pluginRepo));
     }
 }

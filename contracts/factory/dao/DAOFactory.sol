@@ -8,12 +8,16 @@ import {createERC1967Proxy} from "../../utils/Proxy.sol";
 import {PluginSetupProcessor} from "../plugin/setup/PluginSetupProcessor.sol";
 import {hashHelpers, PluginSetupRef} from "../plugin/setup/PluginSetupProcessorHelpers.sol";
 import {IPluginSetup} from "../plugin/setup/IPluginSetup.sol";
+import {DAORegistry} from "./DAORegistry.sol";
 
 /// @title DAOFactory
 /// @notice This contract is used to create a DAO.
 contract DAOFactory {
     /// @notice The DAO base contract, to be used for creating new `DAO`s via `createERC1967Proxy` function.
     address public immutable daoBase;
+
+    /// @notice The DAO registry listing the `DAO` contracts created via this contract.
+    DAORegistry public immutable daoRegistry;
 
     /// @notice The plugin setup processor for installing plugins on the newly created `DAO`s.
     PluginSetupProcessor public immutable pluginSetupProcessor;
@@ -40,8 +44,13 @@ contract DAOFactory {
     error NoPluginProvided();
 
     /// @notice The constructor setting the plugin setup processor and creating the base contracts for the factory.
+    /// @param _registry The DAO registry to register the DAO by its name.
     /// @param _pluginSetupProcessor The address of PluginSetupProcessor.
-    constructor(PluginSetupProcessor _pluginSetupProcessor) {
+    constructor(
+        DAORegistry _registry,
+        PluginSetupProcessor _pluginSetupProcessor
+    ) {
+        daoRegistry = _registry;
         pluginSetupProcessor = _pluginSetupProcessor;
 
         daoBase = address(new DAO());
@@ -62,6 +71,9 @@ contract DAOFactory {
         // Create DAO.
         createdDao = _createDAO(_daoSettings);
 
+        // Register DAO.
+        daoRegistry.register(createdDao, msg.sender);
+
         // Get Permission IDs
         bytes32 rootPermissionID = createdDao.ROOT_PERMISSION_ID();
         bytes32 applyInstallationPermissionID = pluginSetupProcessor
@@ -69,7 +81,11 @@ contract DAOFactory {
 
         // Grant the temporary permissions.
         // Grant Temporarly `ROOT_PERMISSION` to `pluginSetupProcessor`.
-        createdDao.grant(address(createdDao), address(pluginSetupProcessor), rootPermissionID);
+        createdDao.grant(
+            address(createdDao),
+            address(pluginSetupProcessor),
+            rootPermissionID
+        );
 
         // Grant Temporarly `APPLY_INSTALLATION_PERMISSION` on `pluginSetupProcessor` to this `DAOFactory`.
         createdDao.grant(
@@ -109,7 +125,11 @@ contract DAOFactory {
 
         // Revoke the temporarly granted permissions.
         // Revoke Temporarly `ROOT_PERMISSION` from `pluginSetupProcessor`.
-        createdDao.revoke(address(createdDao), address(pluginSetupProcessor), rootPermissionID);
+        createdDao.revoke(
+            address(createdDao),
+            address(pluginSetupProcessor),
+            rootPermissionID
+        );
 
         // Revoke `APPLY_INSTALLATION_PERMISSION` on `pluginSetupProcessor` from this `DAOFactory` .
         createdDao.revoke(
@@ -125,7 +145,9 @@ contract DAOFactory {
 
     /// @notice Deploys a new DAO `ERC1967` proxy, and initialize it with this contract as the intial owner.
     /// @param _daoSettings The trusted forwarder, name and metadata hash of the DAO it creates.
-    function _createDAO(DAOSettings calldata _daoSettings) internal returns (DAO dao) {
+    function _createDAO(
+        DAOSettings calldata _daoSettings
+    ) internal returns (DAO dao) {
         // create dao
         dao = DAO(payable(createERC1967Proxy(daoBase, bytes(""))));
 
